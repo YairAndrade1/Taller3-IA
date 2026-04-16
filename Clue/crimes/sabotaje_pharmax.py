@@ -33,16 +33,96 @@ def crear_kb() -> KnowledgeBase:
     kb = KnowledgeBase()
 
     # Constantes del caso
-    tec_rios       = Term("tec_rios")
+    tec_rios = Term("tec_rios")
     asistente_mora = Term("asistente_mora")
-    dra_santos     = Term("dra_santos")
-    director_vega  = Term("director_vega")
-    syntek_corp    = Term("syntek_corp")
-    sala_cultivos  = Term("sala_cultivos")
+    dra_santos = Term("dra_santos")
+    director_vega = Term("director_vega")
+    syntek_corp = Term("syntek_corp")
+    sala_cultivos = Term("sala_cultivos")
 
-    # === YOUR CODE HERE ===
+    # VERSIÓN INICIAL:
+    # kb.add_fact(Predicate("documentacion_exterior", (dra_santos,)))
+    # kb.add_fact(Predicate("registro_conferencia", (director_vega,)))
+    # kb.add_fact(Predicate("sin_coartada", (tec_rios,)))
+    # kb.add_fact(Predicate("acceso_registrado", (tec_rios, sala_cultivos)))
+    # kb.add_fact(Predicate("pago_de", (tec_rios, syntek_corp)))
+    # kb.add_rule(Rule(head=Predicate("descartado", (Term("$X"),)), body=(Predicate("documentacion_exterior", (Term("$X"),)),)))
+    # kb.add_rule(Rule(head=Predicate("culpable", (tec_rios,)), body=(Predicate("sin_coartada", (tec_rios,)), Predicate("acceso_registrado", (tec_rios, sala_cultivos)))))
 
-    # === END YOUR CODE ===
+    # PROMPT:
+    # Revisa mi versión inicial y corrige errores puntuales para que las inferencias salgan bien; puedes refactorizar un poco, pero sin rehacer todo.
+
+    # Hechos base
+    kb.add_fact(Predicate("documentacion_exterior", (dra_santos,)))
+    kb.add_fact(Predicate("registro_conferencia", (director_vega,)))
+    kb.add_fact(Predicate("sin_coartada", (tec_rios,)))
+    kb.add_fact(Predicate("sin_coartada", (asistente_mora,)))
+    kb.add_fact(Predicate("acceso_registrado", (tec_rios, sala_cultivos)))
+    kb.add_fact(Predicate("acceso_registrado", (asistente_mora, sala_cultivos)))
+    kb.add_fact(Predicate("pago_de", (tec_rios, syntek_corp)))
+    kb.add_fact(Predicate("empresa_rival", (syntek_corp,)))
+    kb.add_fact(Predicate("acusa", (asistente_mora, tec_rios)))
+    kb.add_fact(Predicate("da_coartada", (tec_rios, asistente_mora)))
+
+    # Reglas
+    kb.add_rule(
+        Rule(
+            head=Predicate("coartada_verificada", (Term("$X"),)),
+            body=(Predicate("documentacion_exterior", (Term("$X"),)),),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("coartada_verificada", (Term("$X"),)),
+            body=(Predicate("registro_conferencia", (Term("$X"),)),),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("descartado", (Term("$X"),)),
+            body=(Predicate("coartada_verificada", (Term("$X"),)),),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("conflicto_intereses", (Term("$X"), Term("$C"))),
+            body=(
+                Predicate("pago_de", (Term("$X"), Term("$C"))),
+                Predicate("empresa_rival", (Term("$C"),)),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("motivo_economico", (Term("$X"),)),
+            body=(Predicate("conflicto_intereses", (Term("$X"), Term("$C"))),),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("acceso_en_momento", (Term("$X"),)),
+            body=(Predicate("acceso_registrado", (Term("$X"), sala_cultivos)),),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("culpable", (Term("$X"),)),
+            body=(
+                Predicate("sin_coartada", (Term("$X"),)),
+                Predicate("motivo_economico", (Term("$X"),)),
+                Predicate("acceso_en_momento", (Term("$X"),)),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("denuncia_informada", (Term("$X"), Term("$Y"))),
+            body=(
+                Predicate("acusa", (Term("$X"), Term("$Y"))),
+                Predicate("acceso_en_momento", (Term("$X"),)),
+            ),
+        )
+    )
 
     return kb
 
@@ -65,7 +145,9 @@ CASE = CrimeCase(
         ),
         QuerySpec(
             description="¿Técnico Ríos tiene conflicto de intereses con Syntek Corp.?",
-            goal=Predicate("conflicto_intereses", (Term("tec_rios"), Term("syntek_corp"))),
+            goal=Predicate(
+                "conflicto_intereses", (Term("tec_rios"), Term("syntek_corp"))
+            ),
         ),
         QuerySpec(
             description="¿Técnico Ríos es culpable?",
@@ -73,7 +155,9 @@ CASE = CrimeCase(
         ),
         QuerySpec(
             description="¿La denuncia de Asistente Mora es una denuncia informada?",
-            goal=Predicate("denuncia_informada", (Term("asistente_mora"), Term("tec_rios"))),
+            goal=Predicate(
+                "denuncia_informada", (Term("asistente_mora"), Term("tec_rios"))
+            ),
         ),
         QuerySpec(
             description="¿Todo culpable tuvo acceso en el momento del sabotaje?",

@@ -28,16 +28,84 @@ def crear_kb() -> KnowledgeBase:
     kb = KnowledgeBase()
 
     # Constantes del caso
-    elena          = Term("elena")
-    victor         = Term("victor")
-    don_rodrigo    = Term("don_rodrigo")
-    marquesa       = Term("marquesa")
-    estuche_joyas  = Term("estuche_joyas")
+    elena = Term("elena")
+    victor = Term("victor")
+    don_rodrigo = Term("don_rodrigo")
+    marquesa = Term("marquesa")
+    estuche_joyas = Term("estuche_joyas")
     vagon_equipaje = Term("vagon_equipaje")
 
-    # === YOUR CODE HERE ===
+    # VERSIÓN INICIAL:
+    # kb.add_fact(Predicate("fuera_de_escena", (don_rodrigo,)))
+    # kb.add_fact(Predicate("victima", (marquesa,)))
+    # kb.add_fact(Predicate("en_escena", (elena,)))
+    # kb.add_fact(Predicate("acusa", (marquesa, elena)))
+    # kb.add_fact(Predicate("da_coartada", (victor, elena)))
+    # kb.add_fact(Predicate("da_coartada", (elena, victor)))
+    # kb.add_rule(Rule(head=Predicate("descartado", (Term("$X"),)), body=(Predicate("fuera_de_escena", (Term("$X"),)),)))
+    # kb.add_rule(Rule(head=Predicate("culpable", (Term("$X"),)), body=(Predicate("en_escena", (Term("$X"),)), Predicate("acusa", (marquesa, Term("$X"))))))
 
-    # === END YOUR CODE ===
+    # PROMPT: Ayúdame a mejorar mi KB inicial con cambios pequeños para que infiera bien las consultas, sin reescribir todo.
+
+    # Hechos base
+    kb.add_fact(Predicate("fuera_de_escena", (don_rodrigo,)))
+    kb.add_fact(Predicate("victima", (marquesa,)))
+    kb.add_fact(Predicate("en_escena", (elena,)))
+    kb.add_fact(Predicate("acusa", (marquesa, elena)))
+    kb.add_fact(Predicate("da_coartada", (victor, elena)))
+    kb.add_fact(Predicate("da_coartada", (elena, victor)))
+    kb.add_fact(Predicate("presente_en", (don_rodrigo, vagon_equipaje)))
+    kb.add_fact(Predicate("presente_en", (elena, estuche_joyas)))
+
+    # Reglas
+    kb.add_rule(
+        Rule(
+            head=Predicate("descartado", (Term("$X"),)),
+            body=(Predicate("fuera_de_escena", (Term("$X"),)),),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("testigo_imparcial", (Term("$X"),)),
+            body=(Predicate("victima", (Term("$X"),)),),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("acusacion_creible", (Term("$X"), Term("$Y"))),
+            body=(
+                Predicate("testigo_imparcial", (Term("$X"),)),
+                Predicate("acusa", (Term("$X"), Term("$Y"))),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("culpable", (Term("$X"),)),
+            body=(
+                Predicate("en_escena", (Term("$X"),)),
+                Predicate("acusacion_creible", (Term("$Y"), Term("$X"))),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("defiende_al_culpable", (Term("$X"),)),
+            body=(
+                Predicate("da_coartada", (Term("$X"), Term("$Y"))),
+                Predicate("culpable", (Term("$Y"),)),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("alianza_coartadas", (Term("$X"), Term("$Y"))),
+            body=(
+                Predicate("da_coartada", (Term("$X"), Term("$Y"))),
+                Predicate("da_coartada", (Term("$Y"), Term("$X"))),
+            ),
+        )
+    )
 
     return kb
 
@@ -72,7 +140,9 @@ CASE = CrimeCase(
         ),
         QuerySpec(
             description="¿Existe alianza de coartadas entre Elena y Victor?",
-            goal=ExistsGoal("$X", Predicate("alianza_coartadas", (Term("$X"), Term("victor")))),
+            goal=ExistsGoal(
+                "$X", Predicate("alianza_coartadas", (Term("$X"), Term("victor")))
+            ),
         ),
     ),
 )

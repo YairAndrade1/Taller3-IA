@@ -29,15 +29,83 @@ def crear_kb() -> KnowledgeBase:
     kb = KnowledgeBase()
 
     # Constantes del caso
-    reynaldo       = Term("reynaldo")
-    margot         = Term("margot")
-    pablo          = Term("pablo")
-    bernardo       = Term("bernardo")
+    reynaldo = Term("reynaldo")
+    margot = Term("margot")
+    pablo = Term("pablo")
+    bernardo = Term("bernardo")
     frasco_arsenico = Term("frasco_arsenico")
 
-    # === YOUR CODE HERE ===
+    # VERSIÓN INICIAL:
+    # kb.add_fact(Predicate("huellas_en", (reynaldo, frasco_arsenico)))
+    # kb.add_fact(Predicate("lejos_de_escena", (pablo,)))
+    # kb.add_fact(Predicate("lejos_de_escena", (bernardo,)))
+    # kb.add_fact(Predicate("acusa", (pablo, reynaldo)))
+    # kb.add_fact(Predicate("da_coartada", (margot, reynaldo)))
+    # kb.add_fact(Predicate("da_coartada", (reynaldo, margot)))
+    # kb.add_rule(Rule(head=Predicate("descartado", (Term("$X"),)), body=(Predicate("lejos_de_escena", (Term("$X"),)),)))
+    # kb.add_rule(Rule(head=Predicate("culpable", (Term("$X"),)), body=(Predicate("huellas_en", (Term("$X"), frasco_arsenico)),)))
 
-    # === END YOUR CODE ===
+    # PROMPT: Revisa mi versión inicial y ayúdame a corregir reglas puntuales para que salgan las consultas del caso sin cambiar toda la estructura.
+
+    # Hechos base
+    kb.add_fact(Predicate("objeto_crimen", (frasco_arsenico,)))
+    kb.add_fact(Predicate("huellas_en", (reynaldo, frasco_arsenico)))
+    kb.add_fact(Predicate("lejos_de_escena", (pablo,)))
+    kb.add_fact(Predicate("lejos_de_escena", (bernardo,)))
+    kb.add_fact(Predicate("acusa", (pablo, reynaldo)))
+    kb.add_fact(Predicate("da_coartada", (margot, reynaldo)))
+    kb.add_fact(Predicate("da_coartada", (reynaldo, margot)))
+    kb.add_fact(Predicate("sin_coartada_verificada", (reynaldo,)))
+
+    # Reglas
+    kb.add_rule(
+        Rule(
+            head=Predicate("descartado", (Term("$X"),)),
+            body=(Predicate("lejos_de_escena", (Term("$X"),)),),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("evidencia_directa", (Term("$X"),)),
+            body=(Predicate("huellas_en", (Term("$X"), frasco_arsenico)),),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("testimonio_confiable", (Term("$X"), Term("$Y"))),
+            body=(
+                Predicate("descartado", (Term("$X"),)),
+                Predicate("acusa", (Term("$X"), Term("$Y"))),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("culpable", (Term("$X"),)),
+            body=(
+                Predicate("evidencia_directa", (Term("$X"),)),
+                Predicate("sin_coartada_verificada", (Term("$X"),)),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("encubridor", (Term("$X"),)),
+            body=(
+                Predicate("da_coartada", (Term("$X"), Term("$Y"))),
+                Predicate("culpable", (Term("$Y"),)),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("coartada_cruzada", (Term("$X"), Term("$Y"))),
+            body=(
+                Predicate("da_coartada", (Term("$X"), Term("$Y"))),
+                Predicate("da_coartada", (Term("$Y"), Term("$X"))),
+            ),
+        )
+    )
 
     return kb
 
@@ -73,7 +141,9 @@ CASE = CrimeCase(
         ),
         QuerySpec(
             description="¿Existe coartada cruzada entre Margot y Reynaldo?",
-            goal=ExistsGoal("$X", Predicate("coartada_cruzada", (Term("$X"), Term("reynaldo")))),
+            goal=ExistsGoal(
+                "$X", Predicate("coartada_cruzada", (Term("$X"), Term("reynaldo")))
+            ),
         ),
     ),
 )

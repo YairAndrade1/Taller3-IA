@@ -27,7 +27,14 @@ Una red está activa si al menos uno de sus miembros es culpable.
 """
 
 from src.crime_case import CrimeCase, QuerySpec
-from src.predicate_logic import ExistsGoal, ForallGoal, KnowledgeBase, Predicate, Rule, Term
+from src.predicate_logic import (
+    ExistsGoal,
+    ForallGoal,
+    KnowledgeBase,
+    Predicate,
+    Rule,
+    Term,
+)
 
 
 def crear_kb() -> KnowledgeBase:
@@ -35,15 +42,118 @@ def crear_kb() -> KnowledgeBase:
     kb = KnowledgeBase()
 
     # Constantes del caso
-    capitan_herrera   = Term("capitan_herrera")
-    oficial_duarte    = Term("oficial_duarte")
-    marinero_pinto    = Term("marinero_pinto")
-    inspector_nova    = Term("inspector_nova")
-    cartel_portuario  = Term("cartel_portuario")
+    capitan_herrera = Term("capitan_herrera")
+    oficial_duarte = Term("oficial_duarte")
+    marinero_pinto = Term("marinero_pinto")
+    inspector_nova = Term("inspector_nova")
+    cartel_portuario = Term("cartel_portuario")
 
-    # === YOUR CODE HERE ===
+    # VERSIÓN INICIAL:
+    # kb.add_fact(Predicate("registro_fuera_puerto", (capitan_herrera,)))
+    # kb.add_fact(Predicate("registro_fuera_puerto", (inspector_nova,)))
+    # kb.add_fact(Predicate("firma_manifiestos_fraudulentos", (oficial_duarte,)))
+    # kb.add_fact(Predicate("sin_coartada", (oficial_duarte,)))
+    # kb.add_fact(Predicate("tiene_acceso_bodega", (marinero_pinto,)))
+    # kb.add_fact(Predicate("visto_introduciendo_mercancia", (marinero_pinto,)))
+    # kb.add_fact(Predicate("sin_coartada", (marinero_pinto,)))
+    # kb.add_rule(Rule(head=Predicate("culpable", (Term("$X"),)), body=(Predicate("firma_manifiestos_fraudulentos", (Term("$X"),)), Predicate("sin_coartada", (Term("$X"),)))))
+    # kb.add_rule(Rule(head=Predicate("culpable", (Term("$X"),)), body=(Predicate("tiene_acceso_bodega", (Term("$X"),)), Predicate("visto_introduciendo_mercancia", (Term("$X"),)), Predicate("sin_coartada", (Term("$X"),)))))
 
-    # === END YOUR CODE ===
+    # PROMPT: Revisa mi KB inicial y haz mejoras pequeñas para corregir inferencias (red activa, operación conjunta, etc.) sin reemplazar toda la solución.
+
+    # Hechos base
+    kb.add_fact(Predicate("registro_fuera_puerto", (capitan_herrera,)))
+    kb.add_fact(Predicate("registro_fuera_puerto", (inspector_nova,)))
+    kb.add_fact(Predicate("firma_manifiestos_fraudulentos", (oficial_duarte,)))
+    kb.add_fact(Predicate("sin_coartada", (oficial_duarte,)))
+    kb.add_fact(Predicate("sin_coartada", (marinero_pinto,)))
+    kb.add_fact(Predicate("tiene_acceso_bodega", (marinero_pinto,)))
+    kb.add_fact(Predicate("visto_introduciendo_mercancia", (marinero_pinto,)))
+    kb.add_fact(Predicate("pertenece_cartel", (oficial_duarte, cartel_portuario)))
+    kb.add_fact(Predicate("pertenece_cartel", (marinero_pinto, cartel_portuario)))
+    kb.add_fact(Predicate("reportado_informante", (oficial_duarte,)))
+    kb.add_fact(Predicate("reportado_informante", (marinero_pinto,)))
+    kb.add_fact(Predicate("acusa", (capitan_herrera, oficial_duarte)))
+    kb.add_fact(Predicate("acusa", (oficial_duarte, marinero_pinto)))
+    kb.add_fact(Predicate("acusa", (marinero_pinto, oficial_duarte)))
+
+    # Reglas
+    kb.add_rule(
+        Rule(
+            head=Predicate("descartado", (Term("$X"),)),
+            body=(Predicate("registro_fuera_puerto", (Term("$X"),)),),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("fraude_documental", (Term("$X"),)),
+            body=(Predicate("firma_manifiestos_fraudulentos", (Term("$X"),)),),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("contrabando", (Term("$X"),)),
+            body=(
+                Predicate("tiene_acceso_bodega", (Term("$X"),)),
+                Predicate("visto_introduciendo_mercancia", (Term("$X"),)),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("culpable", (Term("$X"),)),
+            body=(
+                Predicate("fraude_documental", (Term("$X"),)),
+                Predicate("sin_coartada", (Term("$X"),)),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("culpable", (Term("$X"),)),
+            body=(
+                Predicate("contrabando", (Term("$X"),)),
+                Predicate("sin_coartada", (Term("$X"),)),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("comparte_red", (Term("$X"), Term("$Y"))),
+            body=(
+                Predicate("pertenece_cartel", (Term("$X"), cartel_portuario)),
+                Predicate("pertenece_cartel", (Term("$Y"), cartel_portuario)),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("operacion_conjunta", (Term("$X"), Term("$Y"))),
+            body=(
+                Predicate("comparte_red", (Term("$X"), Term("$Y"))),
+                Predicate("culpable", (Term("$X"),)),
+                Predicate("culpable", (Term("$Y"),)),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("testimonio_confiable", (Term("$X"), Term("$Y"))),
+            body=(
+                Predicate("descartado", (Term("$X"),)),
+                Predicate("acusa", (Term("$X"), Term("$Y"))),
+            ),
+        )
+    )
+    kb.add_rule(
+        Rule(
+            head=Predicate("red_activa", (cartel_portuario,)),
+            body=(
+                Predicate("culpable", (Term("$X"),)),
+                Predicate("pertenece_cartel", (Term("$X"), cartel_portuario)),
+            ),
+        )
+    )
 
     return kb
 
@@ -70,11 +180,16 @@ CASE = CrimeCase(
         ),
         QuerySpec(
             description="¿Hay operación conjunta entre Duarte y Pinto?",
-            goal=Predicate("operacion_conjunta", (Term("oficial_duarte"), Term("marinero_pinto"))),
+            goal=Predicate(
+                "operacion_conjunta", (Term("oficial_duarte"), Term("marinero_pinto"))
+            ),
         ),
         QuerySpec(
             description="¿El testimonio del Capitán Herrera contra Duarte es confiable?",
-            goal=Predicate("testimonio_confiable", (Term("capitan_herrera"), Term("oficial_duarte"))),
+            goal=Predicate(
+                "testimonio_confiable",
+                (Term("capitan_herrera"), Term("oficial_duarte")),
+            ),
         ),
         QuerySpec(
             description="¿Existe alguna red activa?",
